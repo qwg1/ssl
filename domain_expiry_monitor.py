@@ -119,7 +119,7 @@ def main():
 
     # 设置定时任务
     schedule.every().day.at("13:00").do(scheduled_task, config=config, alert_days=alert_days)
-    # print("域名和证书到期监控程序已启动，等待定时任务执行...")
+    print("域名和证书到期监控程序已启动，等待定时任务执行...")
     # schedule.every(2).minutes.do(scheduled_task, config=config, alert_days=alert_days)
 
     # 持续运行，定期执行任务
