@@ -6,6 +6,17 @@ import requests
 import configparser
 import schedule
 import time
+import logging
+
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,  # 默认日志级别
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("log.log", encoding="utf-8"),  # 日志保存到文件
+        logging.StreamHandler()  # 同时输出到控制台
+    ]
+)
 
 # 读取配置文件
 def load_config(config_file="./config/config.ini"):
@@ -14,9 +25,8 @@ def load_config(config_file="./config/config.ini"):
         config.read(config_file)
         return config
     except Exception as e:
-        print(f"读取配置文件时出错: {e}")
+        logging.error(f"读取配置文件时出错: {e}")
         return None
-
 
 # 获取 SSL 证书的到期时间
 def get_certificate_expiry_date(domain):
@@ -28,13 +38,12 @@ def get_certificate_expiry_date(domain):
                 expiry_date = datetime.strptime(cert['notAfter'], '%b %d %H:%M:%S %Y GMT')
                 return expiry_date
     except ssl.SSLError as e:
-        print(f"SSL 错误：{e}")
+        logging.error(f"SSL 错误：{e}")
     except socket.timeout as e:
-        print(f"连接超时：{e}")
+        logging.error(f"连接超时：{e}")
     except Exception as e:
-        print(f"获取证书信息时出错: {e}")
+        logging.error(f"获取证书信息时出错: {e}")
     return None
-
 
 # 获取域名的到期时间
 def get_domain_expiry_date(domain):
@@ -43,9 +52,8 @@ def get_domain_expiry_date(domain):
         expiry_date = min(w.expiration_date) if isinstance(w.expiration_date, list) else w.expiration_date
         return expiry_date
     except Exception as e:
-        print(f"查询域名 {domain} 时出错: {e}")
+        logging.error(f"查询域名 {domain} 时出错: {e}")
         return None
-
 
 # 发送 Telegram 消息
 def send_telegram_message(config, message):
@@ -60,52 +68,49 @@ def send_telegram_message(config, message):
         }
         response = requests.get(url, params=params)
         if response.status_code == 200:
-            print(f"成功发送通知给用户 {user_id}: {message}")
+            logging.info(f"成功发送通知给用户 {user_id}: {message}")
         else:
-            print(f"发送失败给用户 {user_id}，状态码: {response.status_code}")
-
+            logging.error(f"发送失败给用户 {user_id}，状态码: {response.status_code}")
 
 # 发送到期提醒
 def send_alert(domain, days, item_type, config):
     message = f"{item_type} {domain} 将在 {days} 天后过期！"
-    print(f"发送 Telegram 通知：{message}")  # 调试输出
+    logging.warning(f"发送 Telegram 通知：{message}")  # 调试输出
     send_telegram_message(config, message)
-
 
 # 检查证书的过期时间
 def check_certificate_expiry(domain, config, alert_days):
     expiry_date = get_certificate_expiry_date(domain)
     if expiry_date:
         days_left = (expiry_date - datetime.now()).days
-        print(f"域名: {domain} 证书剩余天数：{days_left}")  # 输出域名和证书剩余天数
-        if days_left <= alert_days:  # 如果证书在 alert_days 天内过期，发送提醒
+        logging.info(f"域名: {domain} 证书剩余天数：{days_left}")
+        if days_left <= alert_days:
             send_alert(domain, days_left, "SSL 证书", config)
-
 
 # 检查域名的到期时间
 def check_domain_expiry(domain, config, alert_days):
     expiry_date = get_domain_expiry_date(domain)
     if expiry_date:
         days_left = (expiry_date - datetime.now()).days
-        print(f"域名: {domain} 域名剩余天数：{days_left}")  # 输出域名和剩余天数
-        if days_left <= alert_days:  # 如果域名在 alert_days 天内过期，发送提醒
+        logging.info(f"域名: {domain} 域名剩余天数：{days_left}")
+        if days_left <= alert_days:
             send_alert(domain, days_left, "域名", config)
-
 
 # 定时执行任务的函数
 def scheduled_task(config, alert_days):
     # 获取域名列表
     domains = [config['domains'].get('domain1'), config['domains'].get('domain2')]
     if not domains:
-        print("未找到有效的域名配置！")
+        logging.error("未找到有效的域名配置！")
         return
 
     # 检查每个域名的到期时间和证书到期时间
     for domain in domains:
-        print(f"\n检查域名: {domain}")
+        if not domain:
+            continue
+        logging.info(f"检查域名: {domain}")
         check_domain_expiry(domain, config, alert_days)
         check_certificate_expiry(domain, config, alert_days)
-
 
 # 主函数
 def main():
@@ -115,18 +120,17 @@ def main():
         return
 
     # 获取提醒提前天数配置
-    alert_days = config.getint('alerts', 'alert_days', fallback=7)  # 默认提前7天提醒
+    alert_days = config.getint('alerts', 'alert_days', fallback=7)
 
     # 设置定时任务
     schedule.every().day.at("13:00").do(scheduled_task, config=config, alert_days=alert_days)
-    print("域名和证书到期监控程序已启动，等待定时任务执行...")
+    logging.info("域名和证书到期监控程序已启动，等待定时任务执行...")
     # schedule.every(2).minutes.do(scheduled_task, config=config, alert_days=alert_days)
 
     # 持续运行，定期执行任务
     while True:
         schedule.run_pending()
-        time.sleep(1)  # 每秒检查是否有任务要执行
-
+        time.sleep(1)
 
 if __name__ == "__main__":
     main()
