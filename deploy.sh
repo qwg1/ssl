@@ -18,7 +18,7 @@ MAIN_SCRIPT="domain_expiry_monitor.py"
 SERVICE_NAME="sslbot.service"
 
 # 6. 其他配置目录/文件 (rsync 时需要同步的非 Python 文件, 用空格分隔)
-CONFIG_FILES="requirements.txt config.ini .env"
+CONFIG_FILES="requirements.txt config/ .env"
 
 # ============================ ⚡️ 核心执行区域 (无需修改) ============================
 
@@ -53,6 +53,10 @@ git pull
 echo "📤 同步核心文件到运行目录: $DEST_DIR"
 # 使用非 root 身份执行 rsync，确保同步的文件权限正确
 sudo -u "$RUN_USER" rsync -av \
+  --exclude='.venv' \
+  --exclude='__pycache__' \
+  --exclude='*.pyc' \
+  --exclude='log.log' \
   --include='*/' \
   --include='*.py' \
   $(for file in $CONFIG_FILES; do echo "--include='$file'"; done) \
