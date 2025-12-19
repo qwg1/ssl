@@ -75,6 +75,7 @@ if [ ! -d "$VENV_DIR" ]; then
 fi
 
 # 激活虚拟环境
+#source .venv/bin/activate
 source "$VENV_DIR/bin/activate"
 
 # 确保 pip 版本最新 (解决版本过旧问题)
