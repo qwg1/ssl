@@ -1,5 +1,95 @@
 # Linux 部署指南
 
+## 前置准备：Git 环境配置
+
+### 1. 安装 Git
+
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install git -y
+
+# CentOS/RHEL
+sudo yum install git -y
+
+# 验证安装
+git --version
+```
+
+### 2. 配置 Git 用户信息
+
+```bash
+# 设置全局用户名和邮箱（用于提交记录）
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"
+
+# 查看配置
+git config --list
+```
+
+### 3. 配置 SSH 密钥（推荐，用于免密拉取）
+
+#### 3.1 生成 SSH 密钥
+
+```bash
+# 生成新的 SSH 密钥（按回车使用默认路径）
+ssh-keygen -t ed25519 -C "your.email@example.com"
+
+# 如果系统不支持 ed25519，使用 RSA
+ssh-keygen -t rsa -b 4096 -C "your.email@example.com"
+
+# 启动 ssh-agent
+eval "$(ssh-agent -s)"
+
+# 添加私钥到 ssh-agent
+ssh-add ~/.ssh/id_ed25519
+# 或者 RSA: ssh-add ~/.ssh/id_rsa
+```
+
+#### 3.2 添加公钥到 GitHub
+
+```bash
+# 查看并复制公钥
+cat ~/.ssh/id_ed25519.pub
+# 或者 RSA: cat ~/.ssh/id_rsa.pub
+```
+
+然后：
+1. 登录 GitHub
+2. 进入 **Settings** → **SSH and GPG keys**
+3. 点击 **New SSH key**
+4. 粘贴公钥内容，点击 **Add SSH key**
+
+#### 3.3 测试 SSH 连接
+
+```bash
+# 测试 GitHub 连接
+ssh -T git@github.com
+
+# 成功会显示：
+# Hi username! You've successfully authenticated...
+```
+
+### 4. 克隆项目（两种方式）
+
+#### 方式 A：使用 SSH（推荐，已配置 SSH 密钥）
+
+```bash
+git clone git@github.com:qwg1/ssl.git
+cd ssl
+```
+
+#### 方式 B：使用 HTTPS（无需 SSH 配置）
+
+```bash
+git clone https://github.com/qwg1/ssl.git
+cd ssl
+```
+
+> **注意**：HTTPS 方式在某些服务器上可能需要输入 GitHub 用户名和密码（或 Personal Access Token）。
+
+---
+
 ## 快速开始
 
 ### 1. 克隆项目
