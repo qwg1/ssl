@@ -41,6 +41,8 @@ env/
 # Logs
 *.log
 log.log
+launchd.err
+launchd.log
 
 # Configuration (sensitive data)
 config/config.ini
